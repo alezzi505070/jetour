@@ -72,7 +72,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Dict })
             className="group flex items-center"
             aria-label={dict.meta.siteName}
           >
-            <img src="/images/brand/natco-jetour-logo.png" alt="" className="h-8 lg:h-12 w-auto object-contain" />
+            <img src="/images/brand/natco-jetour-logo.png" alt="" className="h-12 md:h-16 lg:h-20 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav */}

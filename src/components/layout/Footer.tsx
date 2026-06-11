@@ -33,7 +33,7 @@ export default function Footer({ locale, dict }: { locale: Locale; dict: Dict })
         {/* Brand block */}
         <div className="space-y-4">
           <div className="flex items-center">
-            <img src="/images/brand/natco-jetour-logo.png" alt="" className="h-10 lg:h-16 w-auto object-contain" />
+            <img src="/images/brand/natco-jetour-logo.png" alt="" className="h-12 md:h-16 lg:h-20 w-auto object-contain" />
           </div>
           <p className="text-sm font-medium text-sand-300">{dict.footer.tagline}</p>
           <p className="text-sm leading-relaxed text-steel-400">{dict.footer.authorizedDealer}</p>
