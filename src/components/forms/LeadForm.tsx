@@ -9,7 +9,6 @@ import { waLink } from "@/lib/whatsapp";
 import { btnPrimary, btnWhatsapp } from "@/components/ui/buttons";
 import { CheckIcon, WhatsAppIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { useSearchParams } from "next/navigation";
 
 export type LeadFormKind = "testDrive" | "quote" | "service";
 
@@ -29,14 +28,13 @@ export default function LeadForm({
   kind,
   locale,
   dict,
+  defaultModel,
 }: {
   kind: LeadFormKind;
   locale: Locale;
   dict: Dict;
+  defaultModel?: string;
 }) {
-  const searchParams = useSearchParams();
-  const defaultModel = searchParams.get("model") || "";
-
   const f = dict.forms;
   const [values, setValues] = useState<Values>({
     model: defaultModel && models.some((m) => m.slug === defaultModel) ? defaultModel : "",

@@ -13,12 +13,7 @@ export default function ContactStrip({ locale, dict }: { locale: Locale; dict: D
     <section className="mx-auto max-w-7xl px-5 pb-8 pt-12 lg:px-8">
       <div className="card-line relative overflow-hidden rounded-[2.5rem] p-8 sm:p-12 lg:p-16">
         <div className="absolute inset-0 -z-10" aria-hidden="true">
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{
-              backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/lifestyle/home_3_3.jpg)`,
-            }}
-          />
+          <div className="absolute inset-0 bg-[url('/images/lifestyle/home_3_3.jpg')] bg-cover bg-center opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-r from-night-950 via-night-950/92 to-night-950/70" />
         </div>
         <div className="max-w-2xl">

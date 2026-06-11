@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDict } from "@/i18n";
@@ -18,10 +17,12 @@ export async function generateMetadata({
 
 export default async function TestDrivePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ model?: string }>;
 }) {
-  const { locale: raw } = await params;
+  const [{ locale: raw }, { model }] = await Promise.all([params, searchParams]);
   const locale: Locale = isLocale(raw) ? raw : "en";
   const dict = getDict(locale);
 
@@ -34,9 +35,7 @@ export default async function TestDrivePage({
       />
       <div className="mx-auto max-w-3xl px-5">
         <Reveal delay={0.2}>
-          <Suspense fallback={<div className="h-[400px] animate-pulse bg-white/5 rounded-3xl" />}>
-            <LeadForm kind="testDrive" locale={locale} dict={dict} />
-          </Suspense>
+          <LeadForm kind="testDrive" locale={locale} dict={dict} defaultModel={model} />
         </Reveal>
       </div>
     </div>

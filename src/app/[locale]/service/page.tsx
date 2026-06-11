@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDict } from "@/i18n";
@@ -67,9 +66,7 @@ export default async function ServicePage({
       <section className="mx-auto max-w-3xl px-5 pt-10">
         <SectionHeading title={dict.servicePage.formTitle} />
         <Reveal>
-          <Suspense fallback={<div className="h-[400px] animate-pulse bg-white/5 rounded-3xl" />}>
-            <LeadForm kind="service" locale={locale} dict={dict} />
-          </Suspense>
+          <LeadForm kind="service" locale={locale} dict={dict} />
         </Reveal>
       </section>
     </div>

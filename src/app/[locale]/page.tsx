@@ -29,7 +29,7 @@ export async function generateMetadata({
     openGraph: {
       title: dict.meta.homeTitle,
       description: dict.meta.homeDescription,
-      images: [`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/lifestyle/home_1.jpg`],
+      images: ["/images/lifestyle/home_1.jpg"],
     },
   };
 }

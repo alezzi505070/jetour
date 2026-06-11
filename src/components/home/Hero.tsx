@@ -82,10 +82,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
           initial={reduce ? undefined : { scale: 1.12 }}
           animate={reduce ? undefined : { scale: 1 }}
           transition={{ duration: 14, ease: "linear" }}
-          className="h-full w-full bg-cover bg-center opacity-35"
-          style={{
-            backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/lifestyle/home_1.jpg)`,
-          }}
+          className="h-full w-full bg-[url('/images/lifestyle/home_1.jpg')] bg-cover bg-center opacity-35"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-night-950/70 via-night-950/82 to-night-950" />
       </div>

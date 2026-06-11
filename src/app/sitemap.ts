@@ -3,8 +3,6 @@ import { site } from "@/data/site";
 import { models } from "@/data/models";
 import { locales } from "@/i18n/config";
 
-export const dynamic = "force-static";
-
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPaths = [
     "",
