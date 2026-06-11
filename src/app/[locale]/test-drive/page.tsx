@@ -34,7 +34,7 @@ export default async function TestDrivePage({
       />
       <div className="mx-auto max-w-3xl px-5">
         <Reveal delay={0.2}>
-          <Suspense fallback={<div className="h-[400px] animate-pulse rounded-[2rem] bg-white/[0.04]" />}>
+          <Suspense fallback={<div className="h-[400px] animate-pulse bg-white/5 rounded-3xl" />}>
             <LeadForm kind="testDrive" locale={locale} dict={dict} />
           </Suspense>
         </Reveal>

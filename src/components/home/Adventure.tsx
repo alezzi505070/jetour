@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/Image";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import type { Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import Image from "@/components/ui/Image";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDict } from "@/i18n";
 import PageHeader from "@/components/ui/PageHeader";

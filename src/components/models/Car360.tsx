@@ -45,7 +45,11 @@ export default function Car360({
   const interacted = useRef(false);
 
   const src = useCallback(
-    (i: number) => `${basePath}/${frames[((i % count) + count) % count]}`,
+    (i: number) => {
+      const prefix = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const path = basePath.startsWith("/") && !basePath.startsWith(prefix) ? `${prefix}${basePath}` : basePath;
+      return `${path}/${frames[((i % count) + count) % count]}`;
+    },
     [basePath, frames, count],
   );
 

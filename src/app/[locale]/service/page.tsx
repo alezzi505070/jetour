@@ -67,7 +67,7 @@ export default async function ServicePage({
       <section className="mx-auto max-w-3xl px-5 pt-10">
         <SectionHeading title={dict.servicePage.formTitle} />
         <Reveal>
-          <Suspense fallback={<div className="h-[400px] animate-pulse rounded-[2rem] bg-white/[0.04]" />}>
+          <Suspense fallback={<div className="h-[400px] animate-pulse bg-white/5 rounded-3xl" />}>
             <LeadForm kind="service" locale={locale} dict={dict} />
           </Suspense>
         </Reveal>

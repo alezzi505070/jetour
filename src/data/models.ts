@@ -44,7 +44,7 @@ export interface VehicleModel {
 
 const g = (dir: string, files: string[]) => files.map((f) => `/images/gallery/${dir}/${f}`);
 
-export const models: VehicleModel[] = [
+const rawModels: VehicleModel[] = [
   {
     slug: "g700",
     dir: "g700",
@@ -579,6 +579,16 @@ export const models: VehicleModel[] = [
     },
   },
 ];
+
+const prefix = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+export const models: VehicleModel[] = rawModels.map((m) => ({
+  ...m,
+  cutout: m.cutout.startsWith("/") && !m.cutout.startsWith(prefix) ? `${prefix}${m.cutout}` : m.cutout,
+  profile: m.profile.startsWith("/") && !m.profile.startsWith(prefix) ? `${prefix}${m.profile}` : m.profile,
+  hero: m.hero.startsWith("/") && !m.hero.startsWith(prefix) ? `${prefix}${m.hero}` : m.hero,
+  gallery: m.gallery.map((img) => img.startsWith("/") && !img.startsWith(prefix) ? `${prefix}${img}` : img),
+}));
 
 export function getModel(slug: string): VehicleModel | undefined {
   return models.find((m) => m.slug === slug);

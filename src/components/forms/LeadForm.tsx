@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
 import { models } from "@/data/models";
@@ -10,6 +9,7 @@ import { waLink } from "@/lib/whatsapp";
 import { btnPrimary, btnWhatsapp } from "@/components/ui/buttons";
 import { CheckIcon, WhatsAppIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
 
 export type LeadFormKind = "testDrive" | "quote" | "service";
 
@@ -29,33 +29,20 @@ export default function LeadForm({
   kind,
   locale,
   dict,
-  defaultModel,
 }: {
   kind: LeadFormKind;
   locale: Locale;
   dict: Dict;
-  defaultModel?: string;
 }) {
-  const f = dict.forms;
   const searchParams = useSearchParams();
-  const queryModel = searchParams.get("model") ?? "";
-  const initialModel = useMemo(() => {
-    const fallback = defaultModel || queryModel;
-    return fallback && models.some((m) => m.slug === fallback) ? fallback : "";
-  }, [defaultModel, queryModel]);
+  const defaultModel = searchParams.get("model") || "";
 
+  const f = dict.forms;
   const [values, setValues] = useState<Values>({
-    model: initialModel,
+    model: defaultModel && models.some((m) => m.slug === defaultModel) ? defaultModel : "",
     payment: "cash",
     serviceType: "maintenance",
   });
-
-  useEffect(() => {
-    if (initialModel) {
-      setValues((v) => ({ ...v, model: initialModel }));
-    }
-  }, [initialModel]);
-
   const [errors, setErrors] = useState<Values>({});
   const [submitted, setSubmitted] = useState(false);
 

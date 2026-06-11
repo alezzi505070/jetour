@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import Image from "@/components/ui/Image";
 import { motion, useReducedMotion } from "framer-motion";
 import type { VehicleModel } from "@/data/models";
 import type { Locale } from "@/i18n/config";
