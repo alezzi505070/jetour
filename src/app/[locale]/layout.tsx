@@ -66,7 +66,7 @@ export default async function LocaleLayout({
       dir={dirOf(locale)}
       className={`${manrope.variable} ${tajawal.variable} antialiased`}
     >
-      <body className="grain min-h-screen flex flex-col bg-night-950 text-steel-100">
+      <body className="min-h-screen flex flex-col bg-night-950 text-steel-100">
         <Header locale={locale} dict={dict} />
         <main className="flex-1">{children}</main>
         <Footer locale={locale} dict={dict} />

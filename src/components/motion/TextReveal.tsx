@@ -37,11 +37,10 @@ export default function TextReveal({
     },
   };
   const word: Variants = {
-    hidden: { y: "115%", opacity: 0, filter: "blur(6px)" },
+    hidden: { y: "115%", opacity: 0 },
     visible: {
       y: "0%",
       opacity: 1,
-      filter: "blur(0px)",
       transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
     },
   };

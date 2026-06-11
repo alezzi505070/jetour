@@ -40,12 +40,11 @@ export default function Reveal({
   const variants: Variants = {
     hidden: reduce
       ? { opacity: 0 }
-      : { opacity: 0, x, y, filter: "blur(10px)" },
+      : { opacity: 0, x, y },
     visible: {
       opacity: 1,
       x: 0,
       y: 0,
-      filter: "blur(0px)",
       transition: { duration, delay, ease: [0.22, 1, 0.36, 1] },
     },
   };
