@@ -45,14 +45,14 @@ export default async function AboutPage({
           <div className="relative h-[420px] overflow-hidden rounded-[2.5rem] border border-ink/10">
             <Parallax speed={0.4} className="absolute -inset-y-16 inset-x-0">
               <Image
-                src="/images/lifestyle/home_1.jpg"
+                src="/images/lifestyle/home_2.jpg"
                 alt=""
                 fill
                 sizes="100vw"
                 className="object-cover"
               />
             </Parallax>
-            <div className="absolute inset-0 bg-gradient-to-t from-night-950/85 via-transparent to-night-950/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-night-950/65 via-transparent to-night-950/25" />
             <p className="absolute bottom-8 start-8 max-w-md text-2xl font-extrabold text-ink sm:text-3xl">
               {dict.hero.slogan}
             </p>

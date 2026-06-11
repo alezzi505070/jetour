@@ -28,7 +28,7 @@ export default function Parallax({
   const y = useTransform(scrollYProgress, [0, 1], [speed * 160, speed * -160]);
 
   return (
-    <div ref={ref} className={cn("relative", className)}>
+    <div ref={ref} className={cn(className ?? "relative")}>
       <motion.div style={reduce ? undefined : { y }} className="h-full w-full">
         {children}
       </motion.div>
