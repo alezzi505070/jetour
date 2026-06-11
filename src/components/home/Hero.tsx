@@ -199,7 +199,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2.4, duration: 1 }}
-            className="pointer-events-none absolute inset-x-0 -bottom-10 flex justify-center"
+            className="pointer-events-none absolute inset-x-0 bottom-2 sm:-bottom-10 flex justify-center"
             aria-hidden="true"
           >
             <span className="flex items-center gap-2 rounded-full border border-ink/12 bg-night-900/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-steel-300 backdrop-blur">
