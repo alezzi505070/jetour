@@ -9,6 +9,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import WhatsAppFloat from "@/components/layout/WhatsAppFloat";
 import MobileActionBar from "@/components/layout/MobileActionBar";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 
 const manrope = Manrope({
   variable: "--font-en",
@@ -72,6 +74,7 @@ export default async function LocaleLayout({
         <Footer locale={locale} dict={dict} />
         <WhatsAppFloat locale={locale} dict={dict} />
         <MobileActionBar locale={locale} dict={dict} />
+        <SpeedInsights />
       </body>
     </html>
   );
