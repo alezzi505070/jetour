@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -10,12 +10,6 @@ const FULL_TURNTABLE = Array.from({ length: 36 }, (_, i) => `${String(i).padStar
 /** G700 ships an 18-frame turntable using odd frames only: 01.png … 35.png */
 export const ODD_TURNTABLE = Array.from({ length: 18 }, (_, i) => `${String(i * 2 + 1).padStart(2, "0")}.png`);
 
-/**
- * Interactive turntable viewer built from JETOUR's official exterior
- * photography. Drag (or touch-drag) to rotate; gently auto-spins while idle.
- * Frames are preloaded and swapped on a single <img> so the browser cache
- * does the heavy lifting.
- */
 export default function Car360({
   basePath,
   alt,
@@ -33,52 +27,108 @@ export default function Car360({
 }) {
   const count = frames.length;
   const startIndex = initialIndex ?? Math.floor(count * 0.64); // side-profile beauty angle
-  const [frame, setFrame] = useState(startIndex);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
   const reduce = useReducedMotion();
 
-  const frameRef = useRef(startIndex);
-  const lastX = useRef(0);
-  const acc = useRef(0);
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const interacted = useRef(false);
+  // Reference hooks to store state variables without triggering constant re-renders
+  const imagesRef = useRef<HTMLImageElement[]>([]);
+  const isReadyRef = useRef(false);
 
-  const src = useCallback(
-    (i: number) => `${basePath}/${frames[((i % count) + count) % count]}`,
-    [basePath, frames, count],
-  );
+  // Smooth rotation animation refs
+  const targetFrameRef = useRef(startIndex);
+  const currentFrameRef = useRef(startIndex);
+  const velocityRef = useRef(0); // frames per second rotation speed
+  const lastPointerX = useRef(0);
+  const lastPointerTime = useRef(0);
+  const autoRotateAccumulator = useRef(0);
+  const interactedRef = useRef(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const setFrameSafe = useCallback(
-    (i: number) => {
-      const normalized = ((i % count) + count) % count;
-      frameRef.current = normalized;
-      setFrame(normalized);
-    },
-    [count],
-  );
+  const getFrameSrc = (index: number) => {
+    const normalized = ((index % count) + count) % count;
+    return `${basePath}/${frames[normalized]}`;
+  };
 
-  // Preload active frame first, then defer preloading other frames to idle time.
+  // Draw the current frame onto the canvas
+  const drawFrame = (frameVal: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Convert decimal frame index to nearest integer index
+    const roundedIndex = ((Math.round(frameVal) % count) + count) % count;
+    const img = imagesRef.current[roundedIndex] || imagesRef.current[startIndex];
+
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  // Handle device-pixel-ratio scaling to keep the canvas sharp
+  const resizeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+
+    // Standard high-definition internal resolution scaled by screen dpr
+    const width = 1024;
+    const height = 576;
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  };
+
+  // 1. Preload active frame first, then defer loading other frames to idle time.
   useEffect(() => {
     let cancelled = false;
     const imgs: HTMLImageElement[] = [];
 
-    // 1. Load the initial visible frame immediately
+    // Set initial canvas dimension bounds
+    resizeCanvas();
+
+    // Load active beauty frame first so visual loading is instant
     const initialImg = new Image();
-    initialImg.src = src(startIndex);
+    initialImg.src = getFrameSrc(startIndex);
     initialImg.onload = initialImg.onerror = () => {
       if (cancelled) return;
+      imgs[startIndex] = initialImg;
+      imagesRef.current = imgs;
       setReady(true);
+      isReadyRef.current = true;
 
-      // 2. Defer preloading the rest of the turntable frames until the browser is idle
+      // Draw initial frame immediately
+      drawFrame(startIndex);
+
+      // Defer preloading of all remaining frames
       const preloadRest = () => {
         if (cancelled) return;
         for (let i = 0; i < count; i++) {
           if (i === startIndex) continue;
           const img = new Image();
-          img.src = src(i);
-          imgs.push(img);
+          img.src = getFrameSrc(i);
+          // Set onload to draw frames as they come in if we are matching that frame
+          img.onload = img.onerror = () => {
+            if (!cancelled) {
+              imgs[i] = img;
+              imagesRef.current = imgs;
+              // If we are currently showing this index, redraw
+              const currentRound = ((Math.round(currentFrameRef.current) % count) + count) % count;
+              if (currentRound === i) {
+                drawFrame(currentFrameRef.current);
+              }
+            }
+          };
+          imgs[i] = img;
         }
+        imagesRef.current = imgs;
       };
 
       if (typeof window !== "undefined" && "requestIdleCallback" in window) {
@@ -91,46 +141,112 @@ export default function Car360({
     return () => {
       cancelled = true;
       initialImg.onload = initialImg.onerror = null;
-      imgs.forEach((img) => (img.onload = img.onerror = null));
+      imgs.forEach((img) => {
+        if (img) img.onload = img.onerror = null;
+      });
     };
-  }, [src, count, startIndex]);
+  }, [basePath, frames, count, startIndex]);
 
-  // Idle auto-rotation (paused while dragging / shortly after interaction).
+  // Handle window resizing
   useEffect(() => {
-    if (!autoRotate || !ready || reduce) return;
-    const interval = count >= 30 ? 130 : 200; // slower step for sparser turntables
-    const id = setInterval(() => {
-      if (dragging || interacted.current) return;
-      setFrameSafe(frameRef.current + 1);
-    }, interval);
-    return () => clearInterval(id);
-  }, [autoRotate, ready, dragging, reduce, setFrameSafe, count]);
+    window.addEventListener("resize", resizeCanvas);
+    return () => window.removeEventListener("resize", resizeCanvas);
+  }, []);
+
+  // 2. Linear Interpolation (Lerp) and Physics Loop
+  useEffect(() => {
+    let animationFrameId: number;
+    let lastTime = performance.now();
+
+    const loop = (now: number) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.1); // Cap delta time at 100ms
+      lastTime = now;
+
+      if (isReadyRef.current) {
+        // A. Handle momentum/inertia when not dragging
+        if (!dragging) {
+          if (Math.abs(velocityRef.current) > 0.05) {
+            targetFrameRef.current += velocityRef.current * dt;
+            // Dampen velocity with friction decay
+            velocityRef.current *= Math.exp(-3.8 * dt);
+          } else {
+            velocityRef.current = 0;
+
+            // B. Idle auto-rotation (only when not interacting)
+            if (autoRotate && !interactedRef.current && !reduce) {
+              const speed = count >= 30 ? 4.5 : 3.0; // frames per second
+              autoRotateAccumulator.current += dt * speed;
+              if (autoRotateAccumulator.current >= 1) {
+                targetFrameRef.current += Math.floor(autoRotateAccumulator.current);
+                autoRotateAccumulator.current %= 1;
+              }
+            }
+          }
+        }
+
+        // C. Interpolation (Lerp) toward target frame
+        const lerpFactor = reduce ? 1.0 : Math.min(18 * dt, 1.0); // Damping constant
+        const diff = targetFrameRef.current - currentFrameRef.current;
+        currentFrameRef.current += diff * lerpFactor;
+
+        // D. Draw the current interpolated frame
+        drawFrame(currentFrameRef.current);
+      }
+
+      animationFrameId = requestAnimationFrame(loop);
+    };
+
+    animationFrameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [dragging, autoRotate, reduce, count]);
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (!ready) return;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     setDragging(true);
-    interacted.current = true;
-    lastX.current = e.clientX;
-    acc.current = 0;
-    if (idleTimer.current) clearTimeout(idleTimer.current);
+    interactedRef.current = true;
+    velocityRef.current = 0;
+    lastPointerX.current = e.clientX;
+    lastPointerTime.current = performance.now();
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
-    acc.current += e.clientX - lastX.current;
-    lastX.current = e.clientX;
-    const step = count >= 30 ? 10 : 18; // px of drag per frame
-    while (Math.abs(acc.current) >= step) {
-      const dir = acc.current > 0 ? -1 : 1;
-      setFrameSafe(frameRef.current + dir);
-      acc.current += dir * step;
+    if (!dragging || !ready) return;
+
+    const now = performance.now();
+    const dt = now - lastPointerTime.current;
+    const dx = e.clientX - lastPointerX.current;
+
+    // Control drag sensitivity: drag 14px to shift 1 frame
+    const pxPerFrame = 14;
+    const frameDelta = -dx / pxPerFrame;
+
+    targetFrameRef.current += frameDelta;
+
+    // Calculate instantaneous swipe velocity
+    if (dt > 0) {
+      velocityRef.current = (frameDelta / dt) * 1000; // frames per second
     }
+
+    lastPointerX.current = e.clientX;
+    lastPointerTime.current = now;
   };
 
   const endDrag = () => {
+    if (!dragging) return;
     setDragging(false);
-    if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => (interacted.current = false), 3500);
+
+    // Limit maximum spin speed to prevent excessive spinning
+    const maxVelocity = 45; // frames per second
+    velocityRef.current = Math.max(-maxVelocity, Math.min(maxVelocity, velocityRef.current));
+
+    // Reset interaction flag after an idle period (3.5 seconds)
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      interactedRef.current = false;
+      autoRotateAccumulator.current = 0;
+    }, 3500);
   };
 
   return (
@@ -148,14 +264,21 @@ export default function Car360({
       role="img"
       aria-label={alt}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- frame-swapped turntable; next/image would re-optimize every frame */}
-      <img
-        src={src(frame)}
-        alt={alt}
-        draggable={false}
-        className="pointer-events-none h-full w-full object-contain drop-shadow-[0_42px_50px_rgba(23,52,118,0.30)]"
-        fetchPriority="high"
+      <canvas
+        ref={canvasRef}
+        className={cn(
+          "mx-auto h-full w-full object-contain drop-shadow-[0_42px_50px_rgba(23,52,118,0.30)]",
+          !ready && "hidden"
+        )}
       />
+      {!ready && (
+        <img
+          src={getFrameSrc(startIndex)}
+          alt={alt}
+          className="mx-auto h-full w-full object-contain drop-shadow-[0_42px_50px_rgba(23,52,118,0.30)]"
+          loading="eager"
+        />
+      )}
       {!ready && (
         <span
           className="absolute bottom-3 start-1/2 h-1 w-28 -translate-x-1/2 overflow-hidden rounded-full bg-ink/10 rtl:translate-x-1/2"

@@ -13,6 +13,8 @@ const offsets: Record<Direction, { x: number; y: number }> = {
   none: { x: 0, y: 0 },
 };
 
+import { useState, useEffect } from "react";
+
 /**
  * Scroll-triggered reveal. Uses blur+slide for a cinematic entrance.
  * `start`/`end` are direction-agnostic offsets (fine in RTL since they're symmetric visual slides).
@@ -34,6 +36,11 @@ export default function Reveal({
   className?: string;
   amount?: number;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const reduce = useReducedMotion();
   const { x, y } = offsets[direction];
 
@@ -49,6 +56,10 @@ export default function Reveal({
     },
   };
 
+  if (!mounted) {
+    return <div className={cn(className)}>{children}</div>;
+  }
+
   return (
     <motion.div
       className={cn(className)}
@@ -61,3 +72,4 @@ export default function Reveal({
     </motion.div>
   );
 }
+
