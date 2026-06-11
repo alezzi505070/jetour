@@ -58,25 +58,42 @@ export default function Car360({
     [count],
   );
 
-  // Preload every frame once the component mounts.
+  // Preload active frame first, then defer preloading other frames to idle time.
   useEffect(() => {
     let cancelled = false;
-    let loaded = 0;
     const imgs: HTMLImageElement[] = [];
-    for (let i = 0; i < count; i++) {
-      const img = new Image();
-      img.src = src(i);
-      img.onload = img.onerror = () => {
-        loaded++;
-        if (!cancelled && loaded >= count) setReady(true);
+
+    // 1. Load the initial visible frame immediately
+    const initialImg = new Image();
+    initialImg.src = src(startIndex);
+    initialImg.onload = initialImg.onerror = () => {
+      if (cancelled) return;
+      setReady(true);
+
+      // 2. Defer preloading the rest of the turntable frames until the browser is idle
+      const preloadRest = () => {
+        if (cancelled) return;
+        for (let i = 0; i < count; i++) {
+          if (i === startIndex) continue;
+          const img = new Image();
+          img.src = src(i);
+          imgs.push(img);
+        }
       };
-      imgs.push(img);
-    }
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        window.requestIdleCallback(() => preloadRest());
+      } else {
+        setTimeout(preloadRest, 600);
+      }
+    };
+
     return () => {
       cancelled = true;
+      initialImg.onload = initialImg.onerror = null;
       imgs.forEach((img) => (img.onload = img.onerror = null));
     };
-  }, [src, count]);
+  }, [src, count, startIndex]);
 
   // Idle auto-rotation (paused while dragging / shortly after interaction).
   useEffect(() => {
