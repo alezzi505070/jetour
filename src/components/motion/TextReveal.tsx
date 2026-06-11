@@ -3,8 +3,6 @@
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-import { useState, useEffect } from "react";
-
 /**
  * Word-by-word cinematic headline reveal — each word rises out of a clip mask
  * with a slight blur, staggered. The parent (unclipped) element drives
@@ -27,15 +25,10 @@ export default function TextReveal({
   stagger?: number;
   once?: boolean;
 }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const reduce = useReducedMotion();
   const words = text.split(/\s+/).filter(Boolean);
 
-  if (reduce || !mounted) return <span className={cn(className, wordClassName)}>{text}</span>;
+  if (reduce) return <span className={cn(className, wordClassName)}>{text}</span>;
 
   const container: Variants = {
     hidden: {},

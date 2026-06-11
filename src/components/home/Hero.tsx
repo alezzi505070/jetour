@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import {
   motion,
@@ -28,11 +28,6 @@ import { WhatsAppIcon } from "@/components/ui/icons";
  *   5 vignette + scroll hint
  */
 export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const sectionRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
 
@@ -76,7 +71,6 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
 
   return (
     <section
-      key={mounted ? "hero-animated" : "hero-static"}
       ref={sectionRef}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
@@ -85,7 +79,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
       {/* depth-0 — cinematic backdrop */}
       <div className="absolute inset-0 -z-30" aria-hidden="true">
         <motion.div
-          initial={mounted ? (reduce ? undefined : { scale: 1.12 }) : false}
+          initial={reduce ? undefined : { scale: 1.12 }}
           animate={reduce ? undefined : { scale: 1 }}
           transition={{ duration: 14, ease: "linear" }}
           className="h-full w-full bg-[url('/images/lifestyle/home_1.jpg')] bg-cover bg-center opacity-35"
@@ -106,7 +100,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
         aria-hidden="true"
       >
         <motion.span
-          initial={mounted ? { opacity: 0, letterSpacing: "0.6em" } : false}
+          initial={{ opacity: 0, letterSpacing: "0.6em" }}
           animate={{ opacity: 1, letterSpacing: "0.18em" }}
           transition={{ duration: 2.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="select-none whitespace-nowrap text-[19vw] font-extrabold leading-none text-transparent lg:text-[15vw]"
@@ -121,7 +115,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
         {/* depth-4 — headline */}
         <motion.div style={{ y: textY, opacity: fade }} className="relative z-10 text-center">
           <motion.p
-            initial={mounted ? { opacity: 0, y: 18 } : false}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.15 }}
             className="mb-6"
@@ -139,7 +133,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
             />
           </h1>
           <motion.p
-            initial={mounted ? { opacity: 0, y: 22 } : false}
+            initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 1.0 }}
             className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-steel-300 sm:text-lg"
@@ -149,7 +143,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
 
           {/* CTAs */}
           <motion.div
-            initial={mounted ? { opacity: 0, y: 24 } : false}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 1.2 }}
             className="mt-9 flex flex-wrap items-center justify-center gap-4"
@@ -178,7 +172,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
           className="relative z-0 mx-auto -mt-4 w-full max-w-4xl flex-1 sm:-mt-10"
         >
           <motion.div
-            initial={mounted ? { opacity: 0, y: 80, scale: 0.92 } : false}
+            initial={{ opacity: 0, y: 80, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 1.4, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
             style={{ rotateX: springX, rotateY: springY, transformStyle: "preserve-3d" }}
@@ -202,7 +196,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
 
           {/* drag hint */}
           <motion.div
-            initial={mounted ? { opacity: 0 } : false}
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2.4, duration: 1 }}
             className="pointer-events-none absolute inset-x-0 bottom-2 sm:-bottom-10 flex justify-center"
@@ -219,7 +213,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
 
         {/* depth-4 — stats band */}
         <motion.div
-          initial={mounted ? { opacity: 0, y: 40 } : false}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.7 }}
           className="relative z-10 mb-10 mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-ink/10 bg-ink/5 backdrop-blur lg:grid-cols-4"

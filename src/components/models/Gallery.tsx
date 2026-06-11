@@ -7,11 +7,6 @@ import { cn } from "@/lib/utils";
 
 /** Masonry-ish gallery with a swipe/keyboard-friendly lightbox. */
 export default function Gallery({ images, alt }: { images: string[]; alt: string }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const close = useCallback(() => setOpenIndex(null), []);
@@ -44,7 +39,7 @@ export default function Gallery({ images, alt }: { images: string[]; alt: string
             key={src}
             type="button"
             onClick={() => setOpenIndex(i)}
-            initial={mounted ? { opacity: 0, y: 32 } : false}
+            initial={{ opacity: 0, y: 32 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: [0.22, 1, 0.36, 1] }}

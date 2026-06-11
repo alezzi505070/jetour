@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import type { Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
@@ -12,11 +12,6 @@ type Filter = "all" | Series;
 
 /** Filterable model grid with springy layout transitions between filters. */
 export default function ModelsGrid({ locale, dict }: { locale: Locale; dict: Dict }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const [filter, setFilter] = useState<Filter>("all");
 
   const filters: Filter[] = ["all", "G", "T", "X", "D"];
@@ -65,7 +60,7 @@ export default function ModelsGrid({ locale, dict }: { locale: Locale; dict: Dic
             <motion.div
               key={model.slug}
               layout
-              initial={mounted ? { opacity: 0, scale: 0.92, y: 30 } : false}
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 30 }}
               transition={{ duration: 0.45, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}

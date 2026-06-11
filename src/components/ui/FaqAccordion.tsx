@@ -1,16 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export default function FaqAccordion({ items }: { items: { q: string; a: string }[] }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const [open, setOpen] = useState<number | null>(0);
 
   return (
@@ -20,7 +15,7 @@ export default function FaqAccordion({ items }: { items: { q: string; a: string 
         return (
           <motion.div
             key={i}
-            initial={mounted ? { opacity: 0, y: 24 } : false}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: i * 0.06 }}
