@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+  createFramePreloadQueue,
+  getNextFrameBatch,
+  PRELOAD_BATCH_DELAY_MS,
+  PRELOAD_BATCH_SIZE,
+  PRELOAD_START_DELAY_MS,
+  storeInitialFrame,
+} from "./car360Preload";
 
 /** Default 36-frame turntable: 00.png … 35.png */
 const FULL_TURNTABLE = Array.from({ length: 36 }, (_, i) => `${String(i).padStart(2, "0")}.png`);
@@ -23,6 +31,7 @@ export default function Car360({
   autoRotate = true,
   frames = FULL_TURNTABLE,
   initialIndex,
+  onInitialFrameReady,
 }: {
   basePath: string; // e.g. /images/360/t2
   alt: string;
@@ -30,6 +39,7 @@ export default function Car360({
   autoRotate?: boolean;
   frames?: string[];
   initialIndex?: number;
+  onInitialFrameReady?: () => void;
 }) {
   const count = frames.length;
   const startIndex = initialIndex ?? Math.floor(count * 0.64); // side-profile beauty angle
@@ -50,75 +60,133 @@ export default function Car360({
   const lastPointerXRef = useRef(0);
   const lastPointerTimeRef = useRef(0);
   const autoRotateAccumulator = useRef(0);
+  const lastDrawnImageIndexRef = useRef<number | null>(null);
 
-  const getFrameSrc = (index: number) => {
+  const getFrameSrc = useCallback((index: number) => {
     const normalized = ((index % count) + count) % count;
     return `${basePath}/${frames[normalized]}`;
-  };
+  }, [basePath, count, frames]);
 
-  const drawFrame = (frameIndex: number) => {
+  const drawFrame = useCallback((frameIndex: number) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return false;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return false;
 
     const normalizedIndex = ((Math.round(frameIndex) % count) + count) % count;
-    const img = imagesRef.current[normalizedIndex] || imagesRef.current[startIndex];
+    const requestedImg = imagesRef.current[normalizedIndex];
+    const img = requestedImg || imagesRef.current[startIndex];
+    const drawnImageIndex = requestedImg ? normalizedIndex : startIndex;
+
+    if (lastDrawnImageIndexRef.current === drawnImageIndex) return true;
 
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      lastDrawnImageIndexRef.current = drawnImageIndex;
+      return true;
     }
-  };
+
+    return false;
+  }, [count, startIndex]);
 
   // 1. Preload active frame immediately, then defer loading other frames.
   useEffect(() => {
     let cancelled = false;
     const imgs: HTMLImageElement[] = [];
+    let preloadQueue = createFramePreloadQueue(count, startIndex);
+    let idleCallbackId: number | undefined;
+    const timeoutIds: number[] = [];
 
-    const initialImg = new Image();
-    initialImg.src = getFrameSrc(startIndex);
-    initialImg.onload = initialImg.onerror = () => {
-      if (cancelled) return;
-      imgs[startIndex] = initialImg;
-      setReady(true);
-      isReadyRef.current = true;
-      drawFrame(startIndex);
+    imagesRef.current = imgs;
+    isReadyRef.current = false;
+    lastDrawnImageIndexRef.current = null;
 
-      // Preload remaining frames in idle time
-      const preloadRest = () => {
-        if (cancelled) return;
-        for (let i = 0; i < count; i++) {
-          if (i === startIndex) continue;
-          const img = new Image();
-          img.src = getFrameSrc(i);
-          imgs[i] = img;
-        }
-        imagesRef.current = imgs;
-      };
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = window.setTimeout(callback, delay);
+      timeoutIds.push(timeoutId);
+      return timeoutId;
+    };
 
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        window.requestIdleCallback(() => preloadRest());
-      } else {
-        setTimeout(preloadRest, 600);
+    const preloadNextBatch = () => {
+      if (cancelled || preloadQueue.length === 0) return;
+
+      const next = getNextFrameBatch(preloadQueue, PRELOAD_BATCH_SIZE);
+      preloadQueue = next.remaining;
+
+      for (const frameIndex of next.batch) {
+        if (imgs[frameIndex]) continue;
+        const img = new Image();
+        img.decoding = "async";
+        img.src = getFrameSrc(frameIndex);
+        imgs[frameIndex] = img;
+      }
+      imagesRef.current = imgs;
+
+      if (preloadQueue.length > 0) {
+        scheduleTimeout(preloadNextBatch, PRELOAD_BATCH_DELAY_MS);
       }
     };
 
+    const startBackgroundPreload = () => {
+      if (cancelled || preloadQueue.length === 0) return;
+      if ("requestIdleCallback" in window) {
+        idleCallbackId = window.requestIdleCallback(() => preloadNextBatch(), {
+          timeout: PRELOAD_BATCH_DELAY_MS,
+        });
+        return;
+      }
+      preloadNextBatch();
+    };
+
+    const initialImg = new Image();
+    initialImg.decoding = "async";
+    initialImg.src = getFrameSrc(startIndex);
+
+    const finishInitialFrame = () => {
+      if (cancelled) return;
+      storeInitialFrame(imgs, startIndex, initialImg);
+      imagesRef.current = imgs;
+
+      window.requestAnimationFrame(() => {
+        if (cancelled) return;
+        const drewFrame = drawFrame(startIndex);
+        setReady(true);
+        isReadyRef.current = true;
+        if (drewFrame) onInitialFrameReady?.();
+      });
+
+      scheduleTimeout(startBackgroundPreload, PRELOAD_START_DELAY_MS);
+    };
+
+    initialImg.onload = () => {
+      if ("decode" in initialImg) {
+        initialImg.decode().then(finishInitialFrame, finishInitialFrame);
+        return;
+      }
+      finishInitialFrame();
+    };
+    initialImg.onerror = finishInitialFrame;
+
     return () => {
       cancelled = true;
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      if (idleCallbackId !== undefined && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
       initialImg.onload = initialImg.onerror = null;
       imgs.forEach((img) => {
         if (img) img.onload = img.onerror = null;
       });
     };
-  }, [basePath, frames, count, startIndex]);
+  }, [count, drawFrame, getFrameSrc, onInitialFrameReady, startIndex]);
 
   // Redraw when viewport scale changes
   useEffect(() => {
     if (ready) {
       drawFrame(currentFrameRef.current);
     }
-  }, [ready]);
+  }, [ready, drawFrame]);
 
   // 2. Momentum & LERP loop
   useEffect(() => {
@@ -160,7 +228,7 @@ export default function Car360({
 
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [dragging, autoRotate, reduce, count]);
+  }, [dragging, autoRotate, reduce, count, drawFrame]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!ready) return;

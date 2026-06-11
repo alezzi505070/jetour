@@ -1,9 +1,11 @@
-const puppeteer = require('puppeteer');
-const path = require('path');
-
 const targetDir = 'C:\\Users\\lenovo\\.gemini\\antigravity\\brain\\7cc870f3-47e9-40ed-bfa3-a14a9b756753';
 
 async function run() {
+  const [{ default: puppeteer }, path] = await Promise.all([
+    import('puppeteer'),
+    import('node:path'),
+  ]);
+
   console.log('Launching browser...');
   const browser = await puppeteer.launch({
     headless: 'new',

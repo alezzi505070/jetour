@@ -103,10 +103,10 @@ export default function Adventure({ dict }: { locale: Locale; dict: Dict }) {
             className="absolute bottom-0 end-0 w-[52%] overflow-hidden rounded-3xl border border-ink/10 shadow-2xl shadow-accent-900/20"
           >
             <Image
-              src="/images/lifestyle/home_3_4.jpg"
+              src="/images/lifestyle/sanaa-jetour-street.png"
               alt=""
-              width={640}
-              height={420}
+              width={935}
+              height={1681}
               className="h-auto w-full object-cover"
             />
           </motion.div>

@@ -14,12 +14,14 @@ export default function Counter({
   suffix = "",
   prefix = "",
   className,
+  active = true,
   duration = 1.8,
 }: {
   value: number;
   suffix?: string;
   prefix?: string;
   className?: string;
+  active?: boolean;
   duration?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -32,8 +34,8 @@ export default function Counter({
   });
 
   useEffect(() => {
-    if (inView) motionValue.set(value);
-  }, [inView, value, motionValue]);
+    if (inView && active) motionValue.set(value);
+  }, [inView, active, value, motionValue]);
 
   useEffect(() => {
     const el = ref.current;

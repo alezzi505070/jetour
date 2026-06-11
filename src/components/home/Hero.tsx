@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   motion,
@@ -20,18 +20,19 @@ import Kicker from "@/components/ui/Kicker";
 import { waLink } from "@/lib/whatsapp";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
+const HERO_READY_FALLBACK_MS = 2200;
+
 /**
- * Cinematic 3D hero — six depth layers:
- *   0 background photo (slow Ken Burns)   1 atmosphere glows
- *   2 giant watermark word                3 the car (360° turntable on a
- *     mouse-tilt perspective stage)       4 headline / CTAs / stats
- *   5 vignette + scroll hint
+ * Cinematic 3D hero with a coordinated start:
+ * fonts and the first canvas frame settle before the entrance animation begins.
  */
 export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
   const sectionRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
+  const [fontsReady, setFontsReady] = useState(false);
+  const [carReady, setCarReady] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
 
-  // Scroll choreography: car sinks & shrinks, text drifts up faster.
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
@@ -42,20 +43,58 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
   const fade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
   const watermarkY = useTransform(scrollYProgress, [0, 1], [0, 90]);
 
-  // Mouse-tilt 3D stage
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
   const springX = useSpring(tiltX, { stiffness: 60, damping: 16 });
   const springY = useSpring(tiltY, { stiffness: 60, damping: 16 });
 
+  useEffect(() => {
+    let cancelled = false;
+    const fallback = window.setTimeout(() => {
+      setFontsReady(true);
+      setCarReady(true);
+    }, HERO_READY_FALLBACK_MS);
+
+    if ("fonts" in document) {
+      document.fonts.ready.then(
+        () => {
+          if (!cancelled) setFontsReady(true);
+        },
+        () => {
+          if (!cancelled) setFontsReady(true);
+        },
+      );
+    } else {
+      window.setTimeout(() => {
+        if (!cancelled) setFontsReady(true);
+      }, 0);
+    }
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(fallback);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (heroReady) return;
+    if (reduce || (fontsReady && carReady)) {
+      window.requestAnimationFrame(() => setHeroReady(true));
+    }
+  }, [carReady, fontsReady, heroReady, reduce]);
+
+  const onInitialFrameReady = useCallback(() => {
+    setCarReady(true);
+  }, []);
+
   const onMouseMove = (e: React.MouseEvent) => {
-    if (reduce) return;
+    if (reduce || !heroReady) return;
     const rect = sectionRef.current?.getBoundingClientRect();
     if (!rect) return;
     const px = (e.clientX - rect.left) / rect.width - 0.5;
     const py = (e.clientY - rect.top) / rect.height - 0.5;
-    tiltY.set(px * 7); // rotateY
-    tiltX.set(py * -5); // rotateX
+    tiltY.set(px * 7);
+    tiltX.set(py * -5);
   };
   const onMouseLeave = () => {
     tiltX.set(0);
@@ -69,6 +108,8 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
     dict.hero.stats.since,
   ];
 
+  const active = reduce || heroReady;
+
   return (
     <section
       ref={sectionRef}
@@ -76,33 +117,30 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
       onMouseLeave={onMouseLeave}
       className="relative flex min-h-[100svh] flex-col overflow-hidden pt-28 sm:pt-32"
     >
-      {/* depth-0 — cinematic backdrop */}
       <div className="absolute inset-0 -z-30" aria-hidden="true">
         <motion.div
-          initial={reduce ? undefined : { scale: 1.12 }}
-          animate={reduce ? undefined : { scale: 1 }}
-          transition={{ duration: 14, ease: "linear" }}
-          className="h-full w-full bg-[url('/images/lifestyle/home_1.jpg')] bg-cover bg-center opacity-35"
+          initial={reduce ? undefined : { scale: 1.08, opacity: 0.22 }}
+          animate={active ? { scale: 1, opacity: 0.35 } : { scale: 1.08, opacity: 0.22 }}
+          transition={{ duration: 8, ease: "linear" }}
+          className="h-full w-full bg-[url('/images/lifestyle/home_1.jpg')] bg-cover bg-center"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-night-950/70 via-night-950/82 to-night-950" />
       </div>
 
-      {/* depth-1 — atmosphere */}
-      <div className="absolute inset-0 -z-20" aria-hidden="true">
-        <div className="absolute start-[8%] top-[16%] h-80 w-80 rounded-full bg-accent-400/20 blur-[130px]" />
-        <div className="absolute bottom-[10%] end-[6%] h-96 w-96 rounded-full bg-sky-400/20 blur-[150px]" />
+      <div className="absolute inset-0 -z-20 hidden md:block" aria-hidden="true">
+        <div className="absolute start-[8%] top-[16%] h-80 w-80 rounded-full bg-accent-400/16 blur-[100px]" />
+        <div className="absolute bottom-[10%] end-[6%] h-96 w-96 rounded-full bg-sky-400/16 blur-[120px]" />
       </div>
 
-      {/* depth-2 — giant watermark */}
       <motion.div
         style={{ y: watermarkY, opacity: fade }}
         className="pointer-events-none absolute inset-x-0 top-[30%] -z-10 flex justify-center"
         aria-hidden="true"
       >
         <motion.span
-          initial={{ opacity: 0, letterSpacing: "0.6em" }}
-          animate={{ opacity: 1, letterSpacing: "0.18em" }}
-          transition={{ duration: 2.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          initial={reduce ? undefined : { opacity: 0, letterSpacing: "0.55em" }}
+          animate={active ? { opacity: 1, letterSpacing: "0.18em" } : { opacity: 0, letterSpacing: "0.55em" }}
+          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
           className="select-none whitespace-nowrap text-[19vw] font-extrabold leading-none text-transparent lg:text-[15vw]"
           style={{ WebkitTextStroke: "1px rgba(15,35,75,0.10)" }}
           dir="ltr"
@@ -112,40 +150,39 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
       </motion.div>
 
       <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 lg:px-8">
-        {/* depth-4 — headline */}
         <motion.div style={{ y: textY, opacity: fade }} className="relative z-10 text-center">
           <motion.p
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.15 }}
+            initial={reduce ? undefined : { opacity: 0, y: 18 }}
+            animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            transition={{ duration: 0.55, delay: 0.05 }}
             className="mb-6"
           >
             <Kicker center>{dict.hero.kicker}</Kicker>
           </motion.p>
           <h1 className="mx-auto max-w-5xl text-4xl font-extrabold leading-[1.06] text-ink sm:text-6xl lg:text-7xl">
-            <TextReveal text={dict.hero.title1} delay={0.35} stagger={0.09} />
+            <TextReveal text={dict.hero.title1} active={heroReady} delay={0.08} stagger={0.075} />
             <br />
             <TextReveal
               text={dict.hero.title2}
-              delay={0.6}
-              stagger={0.09}
+              active={heroReady}
+              delay={0.2}
+              stagger={0.075}
               wordClassName="text-gradient-accent"
             />
           </h1>
           <motion.p
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.0 }}
+            initial={reduce ? undefined : { opacity: 0, y: 18 }}
+            animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            transition={{ duration: 0.65, delay: 0.45 }}
             className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-steel-300 sm:text-lg"
           >
             {dict.hero.subtitle}
           </motion.p>
 
-          {/* CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.2 }}
+            initial={reduce ? undefined : { opacity: 0, y: 18 }}
+            animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            transition={{ duration: 0.65, delay: 0.6 }}
             className="mt-9 flex flex-wrap items-center justify-center gap-4"
           >
             <Link href={`/${locale}/test-drive`} className={btnPrimary}>
@@ -166,15 +203,14 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
           </motion.div>
         </motion.div>
 
-        {/* depth-3 — the car on a 3D stage */}
         <motion.div
           style={{ y: carY, scale: carScale, perspective: 1200 }}
           className="relative z-0 mx-auto -mt-4 w-full max-w-4xl flex-1 sm:-mt-10"
         >
           <motion.div
-            initial={{ opacity: 0, y: 80, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.4, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            initial={reduce ? undefined : { opacity: 0, y: 56, scale: 0.94 }}
+            animate={active ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 56, scale: 0.94 }}
+            transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
             style={{ rotateX: springX, rotateY: springY, transformStyle: "preserve-3d" }}
             className="relative"
           >
@@ -182,10 +218,11 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
               basePath="/images/360/t2"
               alt={locale === "ar" ? "جيتور T2 — عرض ثلاثي الأبعاد" : "JETOUR T2 — interactive 360° view"}
               className="aspect-[16/9] w-full"
+              autoRotate={heroReady}
+              onInitialFrameReady={onInitialFrameReady}
             />
-            {/* floor shadow + reflection glow */}
             <div
-              className="absolute -bottom-4 left-1/2 h-12 w-[72%] -translate-x-1/2 rounded-[100%] bg-ink/25 blur-2xl"
+              className="absolute -bottom-4 left-1/2 h-12 w-[72%] -translate-x-1/2 rounded-[100%] bg-ink/20 blur-2xl"
               aria-hidden="true"
             />
             <div
@@ -194,11 +231,10 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
             />
           </motion.div>
 
-          {/* drag hint */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.4, duration: 1 }}
+            initial={reduce ? undefined : { opacity: 0 }}
+            animate={active ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ delay: 1.25, duration: 0.6 }}
             className="pointer-events-none absolute inset-x-0 bottom-2 sm:-bottom-10 flex justify-center"
             aria-hidden="true"
           >
@@ -211,11 +247,10 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
           </motion.div>
         </motion.div>
 
-        {/* depth-4 — stats band */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 1.7 }}
+          initial={reduce ? undefined : { opacity: 0, y: 28 }}
+          animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+          transition={{ duration: 0.75, delay: 0.85 }}
           className="relative z-10 mb-10 mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-ink/10 bg-ink/5 backdrop-blur lg:grid-cols-4"
         >
           {stats.map((s, i) => (
@@ -224,7 +259,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
               className="flex flex-col items-center gap-1 bg-night-950/55 px-4 py-6 text-center"
             >
               <span className="text-2xl font-extrabold text-ink sm:text-3xl" dir="ltr">
-                <Counter value={s.value} suffix={s.suffix} duration={1.6 + i * 0.2} />
+                <Counter value={s.value} suffix={s.suffix} duration={1.25 + i * 0.15} active={heroReady} />
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel-400">
                 {s.label}
@@ -234,7 +269,6 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
         </motion.div>
       </div>
 
-      {/* depth-5 — scroll hint */}
       <motion.div
         style={{ opacity: fade }}
         className="pointer-events-none absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 md:flex"
@@ -244,7 +278,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
           {dict.hero.scrollHint}
         </span>
         <motion.span
-          animate={reduce ? undefined : { y: [0, 8, 0] }}
+          animate={active ? { y: [0, 8, 0] } : undefined}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
           className="block h-9 w-5 rounded-full border border-ink/25"
         >

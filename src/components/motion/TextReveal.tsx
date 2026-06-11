@@ -13,6 +13,7 @@ export default function TextReveal({
   text,
   className,
   wordClassName,
+  active = true,
   delay = 0,
   stagger = 0.07,
   once = true,
@@ -21,6 +22,7 @@ export default function TextReveal({
   className?: string;
   /** Applied per word — use for gradient text (background-clip must sit on the transformed element). */
   wordClassName?: string;
+  active?: boolean;
   delay?: number;
   stagger?: number;
   once?: boolean;
@@ -50,8 +52,9 @@ export default function TextReveal({
       className={cn("inline-block", className)}
       aria-label={text}
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once, amount: 0.4 }}
+      animate={active ? undefined : "hidden"}
+      whileInView={active ? "visible" : undefined}
+      viewport={active ? { once, amount: 0.4 } : undefined}
       variants={container}
     >
       {words.map((w, i) => (
