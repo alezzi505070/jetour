@@ -32,11 +32,8 @@ export default function Footer({ locale, dict }: { locale: Locale; dict: Dict })
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
         {/* Brand block */}
         <div className="space-y-4">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold tracking-[0.28em] text-ink">JETOUR</span>
-            <span className="text-xs font-bold uppercase tracking-[0.34em] text-accent-500">
-              {locale === "ar" ? "اليمن" : "Yemen"}
-            </span>
+          <div className="flex items-center">
+            <img src="/images/brand/natco-jetour-logo.png" alt="" className="h-10 w-auto object-contain" />
           </div>
           <p className="text-sm font-medium text-sand-300">{dict.footer.tagline}</p>
           <p className="text-sm leading-relaxed text-steel-400">{dict.footer.authorizedDealer}</p>

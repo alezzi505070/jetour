@@ -67,18 +67,12 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Dict })
         )}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
-          {/* Logo */}
           <Link
             href={`/${locale}`}
-            className="group flex items-baseline gap-2"
+            className="group flex items-center"
             aria-label={dict.meta.siteName}
           >
-            <span className="text-xl font-extrabold tracking-[0.28em] text-ink transition-colors group-hover:text-accent-600">
-              JETOUR
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-[0.34em] text-accent-500">
-              {locale === "ar" ? "اليمن" : "Yemen"}
-            </span>
+            <img src="/images/brand/natco-jetour-logo.png" alt="" className="h-8 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav */}
