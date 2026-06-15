@@ -159,7 +159,7 @@ export default function Hero({ locale, dict }: { locale: Locale; dict: Dict }) {
           >
             <Kicker center>{dict.hero.kicker}</Kicker>
           </motion.p>
-          <h1 className="mx-auto max-w-5xl text-4xl font-extrabold leading-[1.06] text-ink sm:text-6xl lg:text-7xl">
+          <h1 className="mx-auto max-w-5xl text-4xl font-extrabold leading-[1.12] rtl:leading-[1.25] text-ink sm:text-6xl lg:text-7xl">
             <TextReveal text={dict.hero.title1} active={heroReady} delay={0.08} stagger={0.075} />
             <br />
             <TextReveal
