@@ -60,7 +60,7 @@ export default function TextReveal({
       {words.map((w, i) => (
         <span
           key={`${w}-${i}`}
-          className="inline-block overflow-hidden pb-[0.14em] -mb-[0.14em] align-baseline"
+          className="inline-block overflow-hidden pt-[0.25em] -mt-[0.25em] pb-[0.14em] -mb-[0.14em] align-baseline"
           aria-hidden="true"
         >
           <motion.span
